@@ -255,93 +255,70 @@ void createDeviceEventsFromPropertyList(List propertyList) {
   app = getApp()
   logDebug('createEventsFromPropertyList()')
 
-  String eventName, eventUnit, deviceColorMode
   def eventValue // could be String or number
-
   property = propertyList.find { property -> property.pid == wyze_property_color_mode }
   if (null != property) {
     propertyValue = property.value ?: property.pvalue ?: null
     deviceColorMode = (propertyValue == '1' ? 'RGB' : 'CT')
-
-    if (device.hasCapability('ColorMode')) {
-      eventName = 'colorMode'
-      eventUnit = null
-      eventValue = deviceColorMode
-
-      if (device.currentValue(eventName) != eventValue) {
-        logInfo("Updating Property 'colorMode' to ${eventValue}")
-        app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
-      }
-    }
+    sendDeviceEvent(app, 'colorMode', deviceColorMode, null)
   }
 
   propertyList.each { property ->
     propertyValue = property.value ?: property.pvalue ?: null
-    if (property.pid == wyze_property_color && deviceColorMode == 'RGB') {
-      // Set color
-      sendDeviceEvent(app, 'color', propertyValue, null)
-
-      hsv = hexToHsv(propertyValue)
-      hue = hsv[0]
-      saturation = hsv[1]
-
-      // Set Hue
-      sendDeviceEvent(app, 'hue', hue, null)
-
-      // Set Saturation
-      sendDeviceEvent(app, 'saturation', saturation, null)
-    }
     switch (property.pid) {
       // Switch State
       case wyze_property_power:
-        eventName = 'switch'
-        eventUnit = null
         eventValue = propertyValue == wyze_property_power_value_on ? 'on' : 'off'
+        sendDeviceEvent(app, 'switch', eventValue, null)
         break
 
       // Device Online
       case wyze_property_device_online:
-        eventName = 'online'
-        eventUnit = null
         eventValue = propertyValue == wyze_property_device_online_value_true ? 'true' : 'false'
+        sendDeviceEvent(app, 'online', eventValue, null)
         break
 
       // Brightness
       case wyze_property_brightness:
-        eventName = 'level'
-        eventUnit = '%'
-        eventValue = propertyValue
+        eventValue = propertyValue as int
+        sendDeviceEvent(app, 'level', eventValue, '%')
+        break
+
+      // Color
+      case wyze_property_color:
+        hsv = hexToHsv(propertyValue)
+        hue = hsv[0]
+        saturation = hsv[1]
+        // Set color
+        sendDeviceEvent(app, 'color', propertyValue, null)
+        // Set Hue
+        sendDeviceEvent(app, 'hue', hue, null)
+        // Set Saturation
+        sendDeviceEvent(app, 'saturation', saturation, null)
         break
 
       // Color Temp
       case wyze_property_color_temp:
-        if (deviceColorMode == 'CT') {
-          // Set Temperature
-          eventName = 'colorTemperature'
-          eventUnit = '°K'
-          eventValue = propertyValue
-        }
+        eventValue = propertyValue as int
+        sendDeviceEvent(app, 'colorTemperature', eventValue, '°K')
         break
 
       // RSSI
       case wyze_property_rssi:
-        eventName = 'rssi'
-        eventUnit = 'db'
-        eventValue = propertyValue
+        eventValue = propertyValue as int
+        sendDeviceEvent(app, 'rssi', eventValue, 'db')
         break
 
       // Vacation Mode
       case wyze_property_vacation_mode:
-        eventName = 'vacationMode'
-        eventUnit = null
         eventValue = propertyValue == wyze_property_device_vacation_mode_true ? 'true' : 'false'
+        sendDeviceEvent(app, 'vacationMode', eventValue, null)
         break
     }
-    sendDeviceEvent(app, eventName, eventValue, eventUnit)
   }
 }
 
-private sendDeviceEvent(app, eventName, eventValue, eventUnit) {
+private def sendDeviceEvent(app, eventName, eventValue, eventUnit) {
   if (device.currentValue(eventName) != eventValue) {
     logDebug("Updating Property '${eventName}' to ${eventValue}")
     app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
