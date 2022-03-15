@@ -68,7 +68,7 @@ metadata {
   }
 
   preferences {
-    input name: 'refreshInterval', type: 'number', title: 'Refresh Interval', description: 'Number of minutes between automatic refreshes of device state. 0 means no automatic refresh', required: false, defaultValue: 5, range: 0..60
+    input name: 'refreshInterval', type: 'number', title: 'Refresh Interval', description: 'Number of minutes between automatic refreshes of the device info. 0 means no automatic refresh.', required: false, defaultValue: 5, range: 0..60
   }
 }
 
@@ -124,7 +124,6 @@ void createDeviceEventsFromPropertyList(List propertyList) {
   app = getApp()
   logDebug('createEventsFromPropertyList()')
 
-  String eventName, eventUnit
   def eventValue // could be String or number
 
   propertyList.each { property ->
@@ -134,41 +133,32 @@ void createDeviceEventsFromPropertyList(List propertyList) {
       case wyze_action_power_on:
       case wyze_action_power_off:
       case wyze_property_power:
-        eventName = 'switch'
-        eventUnit = null
-        if (propertyValue == wyze_property_power_value_on || propertyValue == wyze_action_power_on) {
-          eventValue = 'on'
-        } else {
-          eventValue = 'off'
-        }
+        eventValue = (propertyValue == wyze_property_power_value_on || propertyValue == wyze_action_power_on) ? 'on' : 'off'
+        sendDeviceEvent(app, 'switch', eventValue, null)
         break
 
       // Device Online
       case wyze_property_device_online:
-        eventName = 'online'
-        eventUnit = null
         eventValue = propertyValue == wyze_property_device_online_value_true ? 'true' : 'false'
+        sendDeviceEvent(app, 'online', eventValue, null)
         break
 
       // RSSI
       case wyze_property_rssi:
-        eventName = 'rssi'
-        eventUnit = 'db'
-        eventValue = propertyValue
+        eventValue = propertyValue as int
+        sendDeviceEvent(app, 'rssi', eventValue, 'db')
         break
 
       // Vacation Mode
       case wyze_property_vacation_mode:
-        eventName = 'vacationMode'
-        eventUnit = null
         eventValue = propertyValue == wyze_property_device_vacation_mode_value_true ? 'true' : 'false'
+        sendDeviceEvent(app, 'vacationMode', eventValue, null)
         break
     }
-    sendDeviceEvent(app, eventName, eventValue, eventUnit)
   }
 }
 
-private sendDeviceEvent(app, eventName, eventValue, eventUnit) {
+private def sendDeviceEvent(app, eventName, eventValue, eventUnit) {
   if (device.currentValue(eventName) != eventValue) {
     logDebug("Updating Property '${eventName}' to ${eventValue}")
     app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
