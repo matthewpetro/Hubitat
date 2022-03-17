@@ -82,7 +82,7 @@ public static final String apiAppVersion() { return '2.19.14' }
 @Field static final String log_level_warn    = '2'
 @Field static final String log_level_error   = '1'
 @Field static final String log_level_off     = '0'
-@Field static final String log_level_default = log_level_info
+@Field static final String log_level_default = '4'
 
 String wyzeAuthBaseUrl() { return 'https://auth-prod.api.wyze.com' }
 String wyzeApiBaseUrl() { return 'https://api.wyzecam.com' }
@@ -670,6 +670,10 @@ private def updateDeviceCache(Closure closure = null) {
       closure(state.deviceCache)
     }
   }
+}
+
+def getAccessToken() {
+  return state.access_token
 }
 
 private def Map getDeviceCache() {
