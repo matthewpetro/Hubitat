@@ -86,6 +86,9 @@ public static final String apiAppVersion() { return '2.19.14' }
 
 String wyzeAuthBaseUrl() { return 'https://auth-prod.api.wyze.com' }
 String wyzeApiBaseUrl() { return 'https://api.wyzecam.com' }
+String wyzeLockApiBaseUrl() { return 'https://yd-saas-toc.wyzecam.com' }
+String wyzeAppKey() { return '275965684684dbdaf29a0ed9' }
+String wyzeAppSecret() { return '4deekof1ba311c5c33a9cb8e12787e8c' }
 
 Map wyzeRequestHeaders() {
   return [
@@ -903,6 +906,56 @@ def apiSetDeviceProperty(String deviceMac, String deviceModel, String propertyId
   ]
 
   asyncapiPost('/app/v2/device/set_property', requestBody, 'deviceEventsCallback', callbackData)
+}
+
+def controlLock(String deviceUuid, String action, Closure closure = { } ) {
+  path = '/openapi/lock/v1/control'
+  body = [
+    'access_token': getAccessToken(),
+    'action': action,
+    'key': wyzeAppKey(),
+    'timestamp': (new Date()).getTime(),
+    'uuid': deviceUuid
+  ]
+
+  // Sign the request
+  body.sign = createRequestSignature(body, path, wyzeAppSecret())
+
+  bodyJson = (new JsonBuilder(body)).toString()
+
+  params = [
+    'uri'  : wyzeLockApiBaseUrl(),
+    'path' : path,
+    'body' : bodyJson
+  ]
+
+  try {
+    httpPostJson(params) { closure(response?.data) }
+  } catch (Exception e) {
+    logError("API Call to ${params.uri}${params.path} failed with Exception: ${e}")
+  }
+}
+
+private String createRequestSignature(Map body, String requestPath, String appSecret) {
+  // The request signature needs to include the request body represented similarly to
+  // a URL query string. The keys and values should be separated by '=' signs and
+  // each key/value pair should be separated by '&'. For instance, a body of
+  //   ['key1': 'value1', 'key2': 'value2']
+  // would be stringifed as:
+  //   'key1=value1&key2=value2'
+  // The example I saw also sorted the request body keys alphabetically, so I did that
+  // here. I'm not sure if that is required, though.
+  stringifiedBody = body.sort().collect {key, value -> "${key}=${value}"}.join('&')
+
+  // The signature should include the HTTP verb, the path of the request, the stringified
+  // body and the application secret concatenated together. The concatenated string
+  // should be MD5 hashed and converted into a hex string.
+  unencodedSignature = "post${requestPath}${stringifiedBody}${appSecret}"
+  urlEncodedSignature = URLEncoder.encode(unencodedSignature, 'UTF-8')
+
+  signatureDigest = MessageDigest.getInstance('MD5').digest(urlEncodedSignature.getBytes('UTF-8'))
+  finalSignature = signatureDigest.encodeHex().toString()
+  return finalSignature
 }
 
 def asyncapiPost(String path, Map body = [:], String callbackMethod = null, Map callbackData = [:]) {

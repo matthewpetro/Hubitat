@@ -42,6 +42,9 @@ public String deviceModel() { return device.getDataValue('product_model') ?: 'YD
 @Field static final String hubitat_device_value_locked = 'locked'
 @Field static final String hubitat_device_value_unlocked = 'unlocked'
 
+@Field static final String wyze_action_lock = 'remoteLock'
+@Field static final String wyze_action_unlock = 'remoteUnlock'
+
 @Field static final String wyze_property_lock_state = 'P3'
 @Field static final String wyze_property_device_online = 'P5'
 
@@ -49,11 +52,6 @@ public String deviceModel() { return device.getDataValue('product_model') ?: 'YD
 @Field static final String wyze_property_lock_state_value_locked = '0'
 @Field static final String wyze_property_device_online_value_true = '1'
 @Field static final String wyze_property_device_online_value_false = '0'
-
-String wyzeLockBaseUrl() { return 'https://yd-saas-toc.wyzecam.com' }
-String wyzeLockControlPath() { return '/openapi/lock/v1/control' }
-String appKey() { return '275965684684dbdaf29a0ed9' }
-String appSecret() { return '4deekof1ba311c5c33a9cb8e12787e8c' }
 
 metadata {
   definition(
@@ -69,7 +67,9 @@ metadata {
   }
 
   preferences {
-    input name: 'refreshInterval', type: 'number', title: 'Refresh Interval', description: 'Number of minutes between automatic refreshes of device state. 0 means no automatic refresh', required: false, defaultValue: 5, range: 0..60
+    input name: 'refreshInterval', type: 'number', title: 'Refresh Interval', description: 'Number of minutes between automatic refreshes of device state. 0 means no automatic refresh.', required: false, defaultValue: 5, range: 0..60
+    input name: 'pollInterval', type: 'number', title: 'Polling Interval', description: 'Number of milliseconds between checks for updated state when locking or unlocking.', required: false, defaultValue: 2000, range: 1000..10000
+    input name: 'pollAttempts', type: 'number', title: 'Number of polls', description: 'Number of times to check for updated state when locking or unlocking.', required: false, defaultValue: 10, range: 1..25
   }
 }
 
@@ -110,96 +110,35 @@ def refresh() {
 def lock() {
   app = getApp()
   logInfo("'Lock' Pressed")
-
-  // Lock the lock
-  body = [
-    'access_token': app.getAccessToken(),
-    'action': 'remoteLock',
-    'key': appKey(),
-    'timestamp': (new Date()).getTime(),
-    'uuid': getDeviceUuid(device.deviceNetworkId, deviceModel)
-  ]
-
-  // Sign the request
-  body.sign = createRequestSignature(body, wyzeLockControlPath(), appSecret())
-
-  bodyJson = (new JsonBuilder(body)).toString()
-
-  params = [
-    'uri'  : wyzeLockBaseUrl(),
-    'path' : wyzeLockControlPath(),
-    'body' : bodyJson
-  ]
-
-  try {
-    httpPostJson(params) { pollForLockUpdates(hubitat_device_value_locked) }
-  } catch (Exception e) {
-    logError("API Call to ${params.uri}${params.path} failed with Exception: ${e}")
-  }
+  deviceUuid = getDeviceUuid(device.deviceNetworkId, deviceModel())
+  app.controlLock(deviceUuid, wyze_action_lock) { pollForLockUpdates(hubitat_device_value_locked) }
 }
 
 def unlock() {
   app = getApp()
   logInfo("'Unlock' Pressed")
-
-  // Unlock the lock
-  body = [
-    'access_token': app.getAccessToken(),
-    'action': 'remoteUnlock',
-    'key': appKey(),
-    'timestamp': (new Date()).getTime(),
-    'uuid': getDeviceUuid(device.deviceNetworkId, deviceModel)
-  ]
-
-  // Sign the request
-  body.sign = createRequestSignature(body, wyzeLockControlPath(), appSecret())
-
-  bodyJson = (new JsonBuilder(body)).toString()
-
-  params = [
-    'uri'  : wyzeLockBaseUrl(),
-    'path' : wyzeLockControlPath(),
-    'body' : bodyJson
-  ]
-
-  try {
-    httpPostJson(params) { pollForLockUpdates(hubitat_device_value_unlocked) }
-  } catch (Exception e) {
-    logError("API Call to ${params.uri}${params.path} failed with Exception: ${e}")
-  }
+  deviceUuid = getDeviceUuid(device.deviceNetworkId, deviceModel())
+  app.controlLock(deviceUuid, wyze_action_unlock) { pollForLockUpdates(hubitat_device_value_unlocked) }
 }
 
+// The Wyze lock API doesn't tell you if the lock actually locked or unlocked after you
+// send a request. We have to poll the lock device periodically to see if the state has
+// changed after sending a lock or unlock request. 
 private void pollForLockUpdates(targetValue) {
-  interval = 2000
-  maxAttempts = 10
   numAttempts = 0
-  while ((device.currentValue('lock', true) != targetValue) && (numAttempts < maxAttempts)) {
-    pauseExecution(interval)
+  while ((getDeviceValueNoCache('lock') != targetValue) && (numAttempts < pollAttempts)) {
+    pauseExecution(pollInterval)
     refresh()
     ++numAttempts
   }
 }
 
-private String createRequestSignature(Map body, String requestPath, String appSecret) {
-  // The request signature needs to include the request body represented similarly to
-  // a URL query string. The keys and values should be separated by '=' signs and
-  // each key/value pair should be separated by '&'. For instance, a body of
-  //   ['key1': 'value1', 'key2': 'value2']
-  // would be stringifed as:
-  //   'key1=value1&key2=value2'
-  // The example I saw also sorted the request body keys alphabetically, so I did that
-  // here. I'm not sure if that is required, though.
-  stringifiedBody = body.sort().collect {key, value -> "${key}=${value}"}.join('&')
-
-  // The signature should include the HTTP verb, the path of the request, the stringified
-  // body and the application secret concatenated together. The concatenated string
-  // should be MD5 hashed and converted into a hex string.
-  unencodedSignature = "post${requestPath}${stringifiedBody}${appSecret}"
-  urlEncodedSignature = URLEncoder.encode(unencodedSignature, 'UTF-8')
-
-  signatureDigest = MessageDigest.getInstance('MD5').digest(urlEncodedSignature.getBytes('UTF-8'))
-  finalSignature = signatureDigest.encodeHex().toString()
-  return finalSignature
+// Hubitat caches the device values during a single run of the driver, so
+// we have to tell it to ignore the cache when getting the lock state after
+// sending a lock or unlock request. If this code don't ignore the cache, it
+// will never know if the state changed or not.
+private def getDeviceValueNoCache(String attributeName) {
+  return device.currentValue(attributeName, true)
 }
 
 private String getDeviceUuid(mac, model) {
