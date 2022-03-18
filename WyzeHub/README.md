@@ -13,6 +13,7 @@ Support is currently limiited to devices I have on hand. Devices will be added a
 * Wyze Plug
 * Wyze Outdoor Plug
 * Wyze Cam (limited support)
+* Wyze Lock
 
 ## To be implemented...
 
@@ -22,7 +23,7 @@ Support is currently limiited to devices I have on hand. Devices will be added a
 
 In process of submitting...
 
-## Installtion (Manual Method)
+## Installation (Manual Method)
 1. Back up your hub or live dangerously.
 
 2. Install the App. In Hubitat, access the _Apps Code_ menu. Click _New App_ then _Import_. Paste the RAW URL to the WyzeHub App: 
@@ -43,7 +44,9 @@ In process of submitting...
     * Wyze Cam:
       * https://raw.githubusercontent.com/jakelehner/Hubitat/master/WyzeHub/drivers/wyzehub-camera-driver.groovy
     * Wyze Cam Group:
-      * https://raw.githubusercontent.com/jakelehner/Hubitat/master/WyzeHub/drivers/wyzehub-camera-group-driver.groovy 
+      * https://raw.githubusercontent.com/jakelehner/Hubitat/master/WyzeHub/drivers/wyzehub-camera-group-driver.groovy
+    * Wyze Lock:
+      * https://raw.githubusercontent.com/jakelehner/Hubitat/master/WyzeHub/drivers/wyzehub-lock-driver.groovy
       
 4. Install an instance of the WyzeHub app. In Hubitat, go to _Apps > Add User App_, select _WyzeHub_, and follow the prompts to enter your credentials and import devices.
 
@@ -60,10 +63,10 @@ In process of submitting...
 Contributions are welcome if you'd like to see additional devices supported or expanded features. Please do so via a pull request:
 
 1. Fork this repository.
-2. Add your driver or functionlaity.
+2. Add your driver or functionality.
    1. It will likely be best to do your work against the `vNext` branch.
    2. Name the device something so to be accurate and recognizable (i.e. 'Camera v2' vs 'Camera v3')
-   3. Take care to follow formatting, code styling, and general "code feel" as best as poossible.
+   3. Take care to follow formatting, code styling, and general "code feel" as best as possible.
    4. Keep the same license (if submitting back to this repo).
 3. Test the hell out of your code.
 4. Submit a Pull Request back to the `vNext` branch.
