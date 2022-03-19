@@ -945,8 +945,8 @@ private String createRequestSignature(String httpVerb, Map body, String requestP
   //   ['key1': 'value1', 'key2': 'value2']
   // would be stringifed as:
   //   'key1=value1&key2=value2'
-  // The example I saw also sorted the request body keys alphabetically, so I did that
-  // here. I'm not sure if that is required, though.
+  // The code in homebridge-wyze-connected-home-v3 also sorted the request body keys
+  // alphabetically, so this code does as well. It is unlcear if that is required, though.
   stringifiedBody = body.sort().collect {key, value -> "${key}=${value}"}.join('&')
 
   // The signature should include the HTTP verb, the path of the request, the stringified
