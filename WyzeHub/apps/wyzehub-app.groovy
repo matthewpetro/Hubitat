@@ -908,6 +908,8 @@ def apiSetDeviceProperty(String deviceMac, String deviceModel, String propertyId
   asyncapiPost('/app/v2/device/set_property', requestBody, 'deviceEventsCallback', callbackData)
 }
 
+// Most of the lock control code was inspired by homebridge-wyze-connected-home-v3
+// at https://github.com/amrishraje/homebridge-wyze-connected-home-v3
 def controlLock(String deviceUuid, String action, Closure closure = { } ) {
   path = '/openapi/lock/v1/control'
   body = [
@@ -919,7 +921,7 @@ def controlLock(String deviceUuid, String action, Closure closure = { } ) {
   ]
 
   // Sign the request
-  body.sign = createRequestSignature(body, path, wyzeAppSecret())
+  body.sign = createRequestSignature('post', body, path, wyzeAppSecret())
 
   bodyJson = (new JsonBuilder(body)).toString()
 
@@ -936,7 +938,7 @@ def controlLock(String deviceUuid, String action, Closure closure = { } ) {
   }
 }
 
-private String createRequestSignature(Map body, String requestPath, String appSecret) {
+private String createRequestSignature(String httpVerb, Map body, String requestPath, String appSecret) {
   // The request signature needs to include the request body represented similarly to
   // a URL query string. The keys and values should be separated by '=' signs and
   // each key/value pair should be separated by '&'. For instance, a body of
@@ -950,7 +952,7 @@ private String createRequestSignature(Map body, String requestPath, String appSe
   // The signature should include the HTTP verb, the path of the request, the stringified
   // body and the application secret concatenated together. The concatenated string
   // should be MD5 hashed and converted into a hex string.
-  unencodedSignature = "post${requestPath}${stringifiedBody}${appSecret}"
+  unencodedSignature = "${httpVerb}${requestPath}${stringifiedBody}${appSecret}"
   urlEncodedSignature = URLEncoder.encode(unencodedSignature, 'UTF-8')
 
   signatureDigest = MessageDigest.getInstance('MD5').digest(urlEncodedSignature.getBytes('UTF-8'))

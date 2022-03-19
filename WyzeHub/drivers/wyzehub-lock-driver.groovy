@@ -141,6 +141,8 @@ private def getDeviceValueNoCache(String attributeName) {
   return device.currentValue(attributeName, true)
 }
 
+
+// Lock MACs consist of the model prepended onto the UUID.
 private String getDeviceUuid(mac, model) {
   return mac?.replace("${model}.", '')
 }
