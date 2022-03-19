@@ -92,7 +92,7 @@ void initialize() {
   log.debug 'initialize()'
   unschedule('refresh')
   if (refreshInterval > 0) {
-    schedule("0 0/${refreshInterval} * * * ? *", 'refresh')
+    schedule("0 */${refreshInterval} * * * ? *", 'refresh')
   }
 }
 
