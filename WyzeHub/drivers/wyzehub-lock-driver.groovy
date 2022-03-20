@@ -108,17 +108,19 @@ def refresh() {
 }
 
 def lock() {
-  app = getApp()
   logInfo("'Lock' Pressed")
-  deviceUuid = getDeviceUuid(device.deviceNetworkId, deviceModel())
-  app.controlLock(deviceUuid, wyze_action_lock) { pollForLockUpdates(hubitat_device_value_locked) }
+  controlLock(wyze_action_lock, hubitat_device_value_locked)
 }
 
 def unlock() {
-  app = getApp()
   logInfo("'Unlock' Pressed")
-  deviceUuid = getDeviceUuid(device.deviceNetworkId, deviceModel())
-  app.controlLock(deviceUuid, wyze_action_unlock) { pollForLockUpdates(hubitat_device_value_unlocked) }
+  controlLock(wyze_action_unlock, hubitat_device_value_unlocked)
+}
+
+private def controlLock(action, targetValue) {
+  app = getApp()
+  lockUuid = getDeviceUuid(device.deviceNetworkId, deviceModel())
+  app.controlLock(lockUuid, action) { pollForLockUpdates(targetValue) }
 }
 
 // The Wyze lock API doesn't tell you if the lock actually locked or unlocked after you
