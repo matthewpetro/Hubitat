@@ -67,21 +67,21 @@ metadata {
 		attribute "rssi", "number"
 	}
 
-	preferences 
-	{
-		
-	}
+	preferences {
+        input name: 'refreshInterval', type: 'number', title: 'Refresh Interval', description: 'Number of minutes between automatic refreshes of device state. 0 means no automatic refresh.', required: false, defaultValue: 5, range: 0..60
+    }
 }
 
 void installed() {
     log.debug "installed()"
 
-	// TODO Make Configurable
-	unschedule('refresh')
-	//schedule('0/10 * * * * ? *', 'refresh')
-
     refresh()
 	initialize()
+}
+
+void uninstalled() {
+    log.debug 'uninstalled()'
+    unschedule('refresh')
 }
 
 void updated() {
@@ -90,7 +90,11 @@ void updated() {
 }
 
 void initialize() {
-   log.debug "initialize()"
+    log.debug "initialize()"
+    unschedule('refresh')
+    if (refreshInterval > 0) {
+        schedule("0 */${refreshInterval} * * * ? *", 'refresh')
+    }
 }
 
 void parse(String description) {

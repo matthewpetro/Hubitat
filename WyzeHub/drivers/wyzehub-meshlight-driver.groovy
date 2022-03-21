@@ -98,6 +98,9 @@ metadata {
 		attribute "rssi", "number"
 		// attrubute "lastRefreshed", "date"
 
+        preferences {
+            input name: 'refreshInterval', type: 'number', title: 'Refresh Interval', description: 'Number of minutes between automatic refreshes of device state. 0 means no automatic refresh.', required: false, defaultValue: 5, range: 0..60
+        }
 	}
 
 }
@@ -109,6 +112,11 @@ void installed() {
 	initialize()
 }
 
+void uninstalled() {
+    log.debug 'uninstalled()'
+    unschedule('refresh')
+}
+
 void updated() {
     logDebug("updated()")
     initialize()
@@ -118,7 +126,9 @@ void initialize() {
     logDebug("initialize()")
 
     unschedule('refresh')
-    //schedule('0/10 * * * * ? *', 'refresh')
+    if (refreshInterval > 0) {
+        schedule("0 */${refreshInterval} * * * ? *", 'refresh')
+    }
 }
 
 void parse(String description) {
