@@ -48,6 +48,7 @@ public String deviceModel() { return device.getDataValue('product_model') ?: 'WL
 @Field static final String wyze_property_color_mode = 'P1508' 
 @Field static final String wyze_property_power_loss_recovery = 'P1509' 
 @Field static final String wyze_property_delay_off = 'P1510'
+@Field static final String wyze_property_sun_match = 'P1528'
  
 @Field static final String wyze_property_power_value_on = '1'
 @Field static final String wyze_property_power_value_off = '0'
@@ -55,6 +56,8 @@ public String deviceModel() { return device.getDataValue('product_model') ?: 'WL
 @Field static final String wyze_property_device_online_value_false = '0'
 @Field static final String wyze_property_device_vacation_mode_value_true = '1'
 @Field static final String wyze_property_device_vacation_mode_value_false = '0'
+@Field static final String wyze_property_device_sun_match_value_true = '1'
+@Field static final String wyze_property_device_sun_match_value_false = '0'
 @Field static final String wyze_property_color_mode_value_ct = '2' 
 @Field static final String wyze_property_color_mode_value_rgb = '1' 
 
@@ -90,6 +93,7 @@ metadata {
 		// command "flashOnce"
 		
 		attribute "vacationMode", "bool"
+		attribute "sunMatch", "bool"
 		attribute "online", "bool"
 		attribute "rssi", "number"
 		// attrubute "lastRefreshed", "date"
@@ -406,10 +410,22 @@ void createDeviceEventsFromPropertyList(List propertyList) {
             case wyze_property_vacation_mode:
                 eventName = "vacationMode"
                 eventUnit = null
-                eventValue = propertyValue == wyze_property_device_vacation_mode_true ? "true" : "false"
+                eventValue = propertyValue == wyze_property_device_vacation_mode_value_true ? "true" : "false"
 
 				if (device.currentValue(eventName) != eventValue) {
 					logInfo("Updating Property 'vacationMode' to ${eventValue}")
+					app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
+				}
+            break
+
+			// Sun match
+            case wyze_property_sun_match:
+                eventName = "sunMatch"
+                eventUnit = null
+                eventValue = propertyValue == wyze_property_device_sun_match_value_true ? "true" : "false"
+
+				if (device.currentValue(eventName) != eventValue) {
+					logInfo("Updating Property 'sunMatch' to ${eventValue}")
 					app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
 				}
             break
