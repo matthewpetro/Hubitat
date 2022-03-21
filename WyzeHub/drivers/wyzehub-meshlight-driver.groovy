@@ -279,28 +279,22 @@ void createDeviceEventsFromPropertyList(List propertyList) {
 
     String eventName, eventUnit
     def eventValue // could be String or number
+    deviceColorMode = device.currentValue('colorMode')
 
-    // Feels silly to loop through this twice but we need colorMode early.
-    // TODO Better way to search propertyList for element with pid = P1508?
-    propertyList.each { property ->
-	
-		propertyValue = property.value ?: property.pvalue ?: null
-        if(property.pid == wyze_property_color_mode) {
-			
-            deviceColorMode = (propertyValue == "1" ? 'RGB' : 'CT')
-            
-            if (device.hasCapability('ColorMode')) {
-                eventName = "colorMode"
-                eventUnit = null
-                eventValue = deviceColorMode
+	if (device.hasCapability('ColorMode')) {
+        property = propertyList.find { property -> property.pid == wyze_property_color_mode }
+        if (null != property) {
+            propertyValue = property.value ?: property.pvalue ?: null
+            eventName = 'colorMode'
+            eventUnit = null
+            eventValue = (propertyValue == '1' ? 'RGB' : 'CT')
 
-				if (device.currentValue(eventName) != eventValue) {
-					logInfo("Updating Property 'colorMode' to ${eventValue}")
-					app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
-				}
+            if (deviceColorMode != eventValue) {
+                logInfo("Updating Property 'colorMode' to ${eventValue}")
+                app.doSendDeviceEvent(device, eventName, eventValue, eventUnit)
             }
         }
-    }
+	}
 
     propertyList.each { property ->
 	
