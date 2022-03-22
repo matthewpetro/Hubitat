@@ -170,8 +170,13 @@ def off() {
 def setLevel(level, durationSecs = null) {
 	app = getApp()
 	logInfo("setLevel() Pressed")
-
-	level = level.min(100).max(0)
+    
+    // Valid range 0-100
+	if (level < 0 ) {
+		level = 0
+	} else if (level > 100) {
+		level = 100
+	}
 
 	actions = [
 		[
@@ -202,6 +207,12 @@ def setColorTemperature(colorTemperature, level = null, durationSecs = null) {
 	]
 
 	if (level) {
+        // Valid range 0-100
+	    if (level < 0 ) {
+		    level = 0
+	    } else if (level > 100) {
+		    level = 100
+	    }
 		actions << [
 			'pid': wyze_property_brightness,
 			'pvalue': level.toString()
@@ -251,8 +262,12 @@ def setHue(hue) {
 	app = getApp()
 	logInfo("setHue() Pressed")
 
-	// Must be between 0 and 100
-	hue = hue.min(100).max(0)
+	// Valid range 0-100
+	if (hue < 0 ) {
+		hue = 0
+	} else if (hue > 100) {
+		hue = 100
+	}
 	currentHsv = hexToHsv(device.currentValue('color'))
 
 	hex = hsvToHexNoHash(hue, currentHsv[1], currentHsv[2])
@@ -271,8 +286,12 @@ def setSaturation(saturation) {
 	app = getApp()
 	logInfo("setSaturation() Pressed")
 
-	// Must be between 0 and 100
-	saturation = saturation.min(100).max(0)
+	// Valid range 0-100
+	if (saturation < 0 ) {
+		saturation = 0
+	} else if (saturation > 100) {
+		saturation = 100
+	}
 	currentHsv = hexToHsv(device.currentValue('color'))
 
 	hex = hsvToHexNoHash(currentHsv[0], saturation, currentHsv[2])
