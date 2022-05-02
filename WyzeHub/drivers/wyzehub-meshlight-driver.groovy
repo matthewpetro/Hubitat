@@ -61,8 +61,6 @@ public String deviceModel() { return device.getDataValue('product_model') ?: 'WL
 @Field static final String wyze_property_color_mode_value_ct = '2' 
 @Field static final String wyze_property_color_mode_value_rgb = '1' 
 
-import groovy.transform.Field
-
 metadata {
 	definition(
 		name: "WyzeHub Color Bulb", 

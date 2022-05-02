@@ -53,6 +53,7 @@ metadata {
 		capability "ColorControl"
 		capability "ColorMode"
 		capability "Refresh"
+		capability "Switch"
 		// capability "LightEffects"
 
 		command(
